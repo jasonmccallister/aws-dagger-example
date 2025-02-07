@@ -122,6 +122,16 @@ resource "aws_iam_role_policy_attachment" "task" {
   policy_arn = aws_iam_policy.task.arn
 }
 
+resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_logs" {
+  role       = aws_iam_role.task_execution.name
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
+}
+
+resource "aws_cloudwatch_log_group" "this" {
+  name              = "/ecs/dagger-demo"
+  retention_in_days = 7
+}
+
 resource "aws_ecs_task_definition" "this" {
   family                   = "dagger-demo"
   requires_compatibilities = ["FARGATE"]
@@ -135,14 +145,32 @@ resource "aws_ecs_task_definition" "this" {
       name      = "web"
       image     = aws_ecr_repository.this.repository_url
       essential = true
+      environment = [
+        {
+          name  = "APP_PORT"
+          value = "80"
+        }
+      ],
       portMappings = [
         {
           containerPort = 80
           hostPort      = 80
         }
-      ]
+      ],
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-group         = aws_cloudwatch_log_group.this.name
+          awslogs-region        = "us-west-2"
+          awslogs-stream-prefix = "web"
+        }
+      }
     }
   ])
+  runtime_platform {
+    operating_system_family = "LINUX"
+    cpu_architecture        = "ARM64"
+  }
 }
 
 resource "aws_lb" "this" {
@@ -191,7 +219,7 @@ resource "aws_ecs_service" "this" {
   name            = "dagger-demo"
   cluster         = aws_ecs_cluster.this.id
   task_definition = aws_ecs_task_definition.this.arn
-  desired_count   = 0
+  desired_count   = 1
   launch_type     = "FARGATE"
 
   network_configuration {
