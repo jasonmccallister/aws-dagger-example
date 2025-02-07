@@ -1,0 +1,6 @@
+{
+  "name": "aws-dagger-example",
+  "engineVersion": "v0.15.3",
+  "sdk": "python",
+  "source": ".dagger"
+}
