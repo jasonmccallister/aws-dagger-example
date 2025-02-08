@@ -12,9 +12,9 @@ class AwsDaggerExample:
 
     @function
     def build(self) -> Container:
-        """Build the container image"""
+        """Build the application"""
         return (
-            dag.container(platform=Platform("linux/arm64"))
+            dag.container(platform=Platform("linux/amd64"))
             .from_(self.image)
             .with_workdir("/app")
             .with_mounted_directory("/app", self.dir)
@@ -35,7 +35,7 @@ class AwsDaggerExample:
 
     @function
     def test(self) -> str:
-        """Run the tests"""
+        """Run the application tests"""
         return (
             self.build()
             .with_mounted_directory("/app", self.dir)
@@ -52,7 +52,7 @@ class AwsDaggerExample:
         region: Annotated[str, Doc("The region for the application")],
         registry: Annotated[str, Doc("The registry to use for pushing the container image")],
     ) -> str:
-        """Push the container image to the ECR registry"""
+        """Push the image to ECR"""
         ecr_client = boto3.client("ecr",
             aws_access_key_id=await access_key.plaintext(),
             aws_secret_access_key=await secret_key.plaintext(),
@@ -88,7 +88,7 @@ class AwsDaggerExample:
         task_definition_family: Annotated[str, Doc("The Task Defintion name to update")],
         registry: Annotated[str, Doc("The registry to use for pushing the container image")],
     ) -> str:
-        """Deploy the new image to the ECS Service"""
+        """Deploy the application to ECS"""
         image = await self.push(access_key, secret_key, session_token, region, registry)
 
         ecs_client = boto3.client(
