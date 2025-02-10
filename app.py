@@ -15,4 +15,5 @@ def api():
     return jsonify({"message": "Hello, Flask!"})
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=port)
+    port = int(port)
+    app.run(host='0.0.0.0', port=port, debug=True)
